@@ -16,8 +16,6 @@ struct trieNode{
 };
 
 
-
-
 /* NOTE: int return values can be used to indicate errors (typically non-zero)
    or success (typically zero return value) */
 
@@ -31,10 +29,10 @@ int addWordOccurrence(const char* word, const int wordLength,
           );
 
 void printTrieContents(/* TODO: any parameters you need */ struct  trieNode* root, char buffer[],
-   int depth//start at zero
+   int depth, int buffSize
 );
 
-int freeTrieMemory(/* TODO: any parameters you need */ struct  trieNode* root
+void freeTrieMemory(/* TODO: any parameters you need */ struct  trieNode* root
     );
 
 int getText(const char* srcAddr, char* buffer, const int bufSize);
@@ -49,8 +47,15 @@ int main(int argc, char** argv){
   }
 
   struct trieNode* root= indexPage(argv[1]);
-  char buffer[300001];
-  printTrieContents(root, buffer, 0);
+
+  if(root == NULL){
+    printf("Failed to index webpage.\n");
+    return -1;
+  }
+
+  int buffSize = 300001;
+  char buffer[buffSize];
+  printTrieContents(root, buffer, 0, buffSize);
 
   freeTrieMemory(root);
   return 0;
@@ -91,7 +96,10 @@ struct trieNode* indexPage(const char* url){
     }else if(wordLength>0){
       word[wordLength]= '\0';
       printf("\t%s\n", word);
-      addWordOccurrence(word, wordLength, root);
+      if(addWordOccurrence(word, wordLength, root) == -1){
+        freeTrieMemory(root);
+        return NULL;
+      }
       wordLength=0;
     }
   }
@@ -99,7 +107,10 @@ struct trieNode* indexPage(const char* url){
   if(wordLength>0){
     word[wordLength]='\0';
     printf("\t%s\n", word);
-    addWordOccurrence(word, wordLength, root);
+    if(addWordOccurrence(word, wordLength, root) == -1){
+      freeTrieMemory(root);
+      return NULL;
+    }
   }
   return root;
 }
@@ -122,6 +133,7 @@ int addWordOccurrence(const char* word, const int wordLength,
       node->children[index] = malloc(sizeof(struct trieNode));
       if(node->children[index] == NULL){
         printf("COULD NOt ALLOCATE MEMORY");
+        return -1;
       }
 
       //Sets the next node's word occurances to zero
@@ -138,7 +150,8 @@ int addWordOccurrence(const char* word, const int wordLength,
   return node->occurances;
 }
 
-void printTrieContents(/* TODO: any parameters you need */ struct trieNode*root, char buffer[], int depth)
+void printTrieContents(/* TODO: any parameters you need */ struct trieNode*root, char buffer[],
+   int depth, int buffSize)
 {
   if(root == NULL){
     return;
@@ -149,17 +162,23 @@ void printTrieContents(/* TODO: any parameters you need */ struct trieNode*root,
       printf("%s: %d\n", buffer, root->occurances);
   }
 
+  
   for(int i = 0; i < 26; i++){
     //Higher i means the buffer receievs the corresponding ASCII character via character arithmetic
-    buffer[depth] = i+'a';
+    if(root->children[i] != NULL){
+      if(depth >= buffSize){
+        printf("Error: Buffer is too small.\n");
+        return;
+      }
+      buffer[depth] = i+'a';
 
-    //Depth is used to keep track of the position in the current word
-    printTrieContents(root->children[i], buffer, depth+1);
-  }
-  
+      //Depth is used to keep track of the position in the current word
+      printTrieContents(root->children[i], buffer, depth+1, buffSize);
+    }
+  } 
 }
 
-int freeTrieMemory(/* TODO: any parameters you need */struct trieNode* root)
+void freeTrieMemory(/* TODO: any parameters you need */struct trieNode* root)
 {
   if(root == NULL){
     return;
