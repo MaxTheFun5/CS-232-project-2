@@ -22,7 +22,8 @@ struct trieNode{
    or success (typically zero return value) */
 
 /* TODO: change this return type */
-void indexPage(const char* url);
+struct trieNode* indexPage(const char* url);
+ 
 
 int addWordOccurrence(const char* word, const int wordLength,
 		       /* TODO: other parameters you need */
@@ -39,18 +40,69 @@ int freeTrieMemory(/* TODO: any parameters you need */ struct  trieNode* root
 int getText(const char* srcAddr, char* buffer, const int bufSize);
 
 int main(int argc, char** argv){
-  /* TODO: write the (simple) main function
+  /* TODO: write the (simple) main function */
 
   /* argv[1] will be the URL to index, if argc > 1 */
+  if(argc < 2){
+    printf("Please provide a URL.\n");
+    return 1;
+  }
 
+  struct trieNode* root= indexPage(argv[1]);
+  char buffer[300001];
+  printTrieContents(root, buffer, 0);
+
+  freeTrieMemory(root);
   return 0;
 }
 
 /* TODO: define the functions corresponding to the above prototypes */
 
 /* TODO: change this return type */
-void indexPage(const char* url)
-{}
+struct trieNode* indexPage(const char* url){
+  struct trieNode* root= malloc(sizeof(struct trieNode));
+
+  if(root==NULL){
+    printf("Could not allocate memory.\n");
+    return NULL;
+  }
+  root->occurances=0;
+
+  for(int i= 0; i<26; i++){
+    root->children[i]=NULL;
+  }
+
+  char text[300001];
+
+  int bytesRead= getText(url, text, sizeof(text));
+  printf("%s\n", url);
+
+  char word[300001];
+  int wordLength=0;
+
+  for(int i=0; i< bytesRead; i++){
+    char c = text[i];
+    if((c>='a' && c<='z')||(c>='A' && c<= 'Z')){
+      if(c>= 'A'&& c<='Z'){
+        c=c+32;
+      }
+      word[wordLength]=c;
+      wordLength++;
+    }else if(wordLength>0){
+      word[wordLength]= '\0';
+      printf("\t%s\n", word);
+      addWordOccurrence(word, wordLength, root);
+      wordLength=0;
+    }
+  }
+
+  if(wordLength>0){
+    word[wordLength]='\0';
+    printf("\t%s\n", word);
+    addWordOccurrence(word, wordLength, root);
+  }
+  return root;
+}
 
 //NOTE: This function assumes the Trie is already initialized
 int addWordOccurrence(const char* word, const int wordLength,
@@ -69,7 +121,7 @@ int addWordOccurrence(const char* word, const int wordLength,
       //Allocates the next node
       node->children[index] = malloc(sizeof(struct trieNode));
       if(node->children[index] == NULL){
-        prinf("COULD NOt ALLOCATE MEMORY");
+        printf("COULD NOt ALLOCATE MEMORY");
       }
 
       //Sets the next node's word occurances to zero
